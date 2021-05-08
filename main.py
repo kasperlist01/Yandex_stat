@@ -1,5 +1,6 @@
 import requests
 from lxml import html
+from key import key
 import math
 import re
 
@@ -23,6 +24,11 @@ class Schedule:
         self.dc_state = self.info_stat(response)
 
     def info_stat(self, response):
+        """Возвращает информацию о всех остановках в городе
+
+        :param response: HTML файл всех остановок
+        :return: Словарь хронящий информацию
+        """
         ls_name_stations = []
         ls_id_stations = []
         ls_coordinates_stations = []
@@ -56,7 +62,7 @@ class Schedule:
         """
         street = '+'.join(street.split())
         dc_res = requests.get(
-            f'https://geocode-maps.yandex.ru/1.x/?apikey=f390a15e-4214-4c6c-afef-0021ee3458e0&format=json'
+            f'https://geocode-maps.yandex.ru/1.x/?apikey={key}&format=json'
             f'&geocode={street}').json()
         addres = dc_res['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['Point']['pos']
         addres = addres.split()
@@ -95,7 +101,8 @@ class Schedule:
 
 
 if __name__ == '__main__':
-    st = input()
+    # st = input()
+    st = 'Орел Московская улица, 65'
     sched = Schedule()
     ls_name_and_id = sched.geopoz_stat(st)
     dc_buses = sched.cr_list_buses(ls_name_and_id[1])
