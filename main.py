@@ -1,3 +1,6 @@
+import pickle
+from pprint import pprint
+
 import requests
 from lxml import html
 from key import key
@@ -99,6 +102,35 @@ class Schedule:
         dc_mr = {key: val[0] for key, val in dc_mr.items() if len(val) != 0 and ':' not in val[0]}
         return dc_mr
 
+def cr_obsh_file():
+    with open('dc_apteka.pickle', 'rb') as f:
+        dc_obj = pickle.load(f)
+    with open('dc_kafe.pickle', 'rb') as f:
+        dc_obj.update(pickle.load(f))
+    with open('dc_shop.pickle', 'rb') as f:
+        dc_obj.update(pickle.load(f))
+    for dc in dc_obj.items():
+        dc[1]['coordinates'] = dc[1]['coordinates'].split(',')
+
+    with open('dc_org.pickle', 'wb') as f:
+        pickle.dump(dc_obj, f)
+    return dc_obj
+
+def cr_new_dc(dc_info_stations, dc_obj):
+    min_station = ''
+    dc_old = dc_info_stations.copy()
+    min_coord = 99
+    for dc2 in dc_old.items():
+        for dc1 in dc_obj.items():
+            if math.fabs(float(dc1[1]['coordinates'][0]) - float(dc2[1]['coord_long'])) + math.fabs(
+                    float(dc1[1]['coordinates'][1]) - float(dc2[1]['coord_lat'])) < min_coord:
+                min_coord = math.fabs(float(dc1[1]['coordinates'][0]) - float(dc2[1]['coord_long'])) + math.fabs(
+                    float(dc1[1]['coordinates'][1]) - float(dc2[1]['coord_lat']))
+                min_station = dc2[1]['name']
+        print(dc1[1]['title'], min_station)
+        # dc2[1]['coord_long'], dc2[1]['coord_lat'] = 100, 100
+        min_coord = 99
+
 
 if __name__ == '__main__':
     # st = input()
@@ -106,5 +138,7 @@ if __name__ == '__main__':
     sched = Schedule()
     ls_name_and_id = sched.geopoz_stat(st)
     dc_buses = sched.cr_list_buses(ls_name_and_id[1])
-    print(ls_name_and_id[0])
-    print(dc_buses)
+    # print(sched.dc_state)
+    # print(ls_name_and_id[0])
+    # print(dc_buses)
+    cr_new_dc(sched.dc_state, cr_obsh_file())
