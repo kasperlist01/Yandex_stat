@@ -1,6 +1,4 @@
 import pickle
-from pprint import pprint
-
 import requests
 from lxml import html
 from key import key
@@ -13,7 +11,7 @@ class Schedule:
     Класс нужен для получения информации об транспорте
     -------------------------
     Метод geopoz_stat() нужен для нахожения ближайшей остновки.
-    Вызывается с параметром street - одрес пользователя.
+    Вызывается с параметром street - адрес пользователя.
     Возвращает список состоящий из названия остановки и её id.
     -------------------------
     Метод cr_list_buses нужен отображения маршруток, которые подходят к остановке.
@@ -30,7 +28,7 @@ class Schedule:
         """Возвращает информацию о всех остановках в городе
 
         :param response: HTML файл всех остановок
-        :return: Словарь хронящий информацию
+        :return: Словарь хронящий информацию об остновках
         """
         ls_name_stations = []
         ls_id_stations = []
@@ -79,7 +77,33 @@ class Schedule:
                     float(addres[1]) - float(dc[1]['coord_lat']))
                 fin_id_station = dc[0]
                 fin_station = dc[1]['name']
-        return [fin_station, fin_id_station]
+        return [fin_station, fin_id_station, addres]
+
+    def dc_ls_stat(self, fin_station):
+        """Метод находит ближайшие остновки.
+
+        :param coord_stat: Название остановки
+        :return: Список остановок
+        """
+        ls = []
+        for dc in self.dc_state.items():
+            if dc[1]['name'] == fin_station:
+                ls.append(dc)
+        return ls
+
+    def find_dist(self, coord_pl, coord_stat):
+        """Метод находит расстояние до ближайшей остновки.
+
+        :param coord_pl: Координаты пользователя.
+        :param coord_stat: Координаты остановки
+        :return: Дистанцию в метрах.
+        """
+        distance = math.sqrt(
+            (float(coord_pl[0]) - float(coord_stat[0])) ** 2 + ((float(coord_pl[1]) - float(coord_stat[1])) ** 2))
+        distance = str(distance)[2:7]
+        while distance[0] == '0':
+            distance = distance[1:]
+        return (distance)
 
     def cr_list_buses(self, fin_id_station):
         """Метод отображает маршрутоки, которые подходят к остановке.
@@ -102,6 +126,8 @@ class Schedule:
         dc_mr = {key: val[0] for key, val in dc_mr.items() if len(val) != 0 and ':' not in val[0]}
         return dc_mr
 
+
+# Обновляет список заведений
 def cr_obsh_file():
     with open('dc_apteka.pickle', 'rb') as f:
         dc_obj = pickle.load(f)
@@ -116,7 +142,9 @@ def cr_obsh_file():
         pickle.dump(dc_obj, f)
     return dc_obj
 
-def cr_new_dc(dc_info_stations, dc_obj):
+
+# Привязывает заведение к отстановке
+"""def cr_new_dc(dc_info_stations, dc_obj):
     min_station = ''
     dc_old = dc_info_stations.copy()
     min_coord = 99
@@ -129,16 +157,21 @@ def cr_new_dc(dc_info_stations, dc_obj):
                 min_station = dc2[1]['name']
         print(dc1[1]['title'], min_station)
         # dc2[1]['coord_long'], dc2[1]['coord_lat'] = 100, 100
-        min_coord = 99
-
+        min_coord = 99"""
 
 if __name__ == '__main__':
     # st = input()
-    st = 'Орел Московская улица, 65'
+    ls = []
+    st = 'Орел Лазурная 7'
     sched = Schedule()
-    ls_name_and_id = sched.geopoz_stat(st)
-    dc_buses = sched.cr_list_buses(ls_name_and_id[1])
+    ls_name_and_id_coord = sched.geopoz_stat(st)
+    ls_stat = sched.dc_ls_stat(ls_name_and_id_coord[0])
+    print(ls_stat, len(ls_stat))
+    dc_buses = sched.cr_list_buses(ls_name_and_id_coord[1])
+    ls.append(sched.dc_state[ls_name_and_id_coord[1]]['coord_long'])
+    ls.append(sched.dc_state[ls_name_and_id_coord[1]]['coord_lat'])
+    print(sched.find_dist(ls_name_and_id_coord[2], ls))
     # print(sched.dc_state)
-    # print(ls_name_and_id[0])
+    # print(ls_name_and_id_coord[0])
     # print(dc_buses)
-    cr_new_dc(sched.dc_state, cr_obsh_file())
+    # cr_new_dc(sched.dc_state, cr_obsh_file())
