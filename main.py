@@ -61,6 +61,7 @@ class Schedule:
         :param street: Адрес пользователя.
         :return: Список состоящий из названия остановки и её id.
         """
+        ls = []
         street = '+'.join(street.split())
         dc_res = requests.get(
             f'https://geocode-maps.yandex.ru/1.x/?apikey={key}&format=json'
@@ -77,7 +78,10 @@ class Schedule:
                     float(addres[1]) - float(dc[1]['coord_lat']))
                 fin_id_station = dc[0]
                 fin_station = dc[1]['name']
-        return [fin_station, fin_id_station, addres]
+        for dc in self.dc_state.items():
+            if dc[1]['name'] == fin_station:
+                ls.append(dc)
+        return [fin_station, fin_id_station, addres, ls]
 
     def dc_ls_stat(self, fin_station):
         """Метод находит ближайшие остновки.
@@ -165,7 +169,9 @@ if __name__ == '__main__':
     st = 'Орел Лазурная 7'
     sched = Schedule()
     ls_name_and_id_coord = sched.geopoz_stat(st)
-    ls_stat = sched.dc_ls_stat(ls_name_and_id_coord[0])
+    ls_stat = sched.dc_ls_stat("Стадион имени Ленина")
+    print(ls_stat, len(ls_stat))
+    ls_stat = ls_name_and_id_coord[3]
     print(ls_stat, len(ls_stat))
     dc_buses = sched.cr_list_buses(ls_name_and_id_coord[1])
     ls.append(sched.dc_state[ls_name_and_id_coord[1]]['coord_long'])
