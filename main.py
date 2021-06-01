@@ -89,10 +89,7 @@ class Schedule:
         :param coord_stat: Название остановки
         :return: Список остановок
         """
-        ls = []
-        for dc in self.dc_state.items():
-            if dc[1]['name'] == fin_station:
-                ls.append(dc)
+        ls = [dc for dc in self.dc_state.items() if dc[1]['name'].lower() == fin_station]
         return ls
 
     def find_dist(self, coord_pl, coord_stat):
@@ -166,7 +163,7 @@ def cr_obsh_file():
 if __name__ == '__main__':
     # st = input()
     ls = []
-    st = 'Орел Лазурная 7'
+    st = 'Орел спасибо'
     sched = Schedule()
     ls_name_and_id_coord = sched.geopoz_stat(st)
     ls_stat = sched.dc_ls_stat("Стадион имени Ленина")
