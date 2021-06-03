@@ -1,4 +1,6 @@
 import os
+from pprint import pprint
+
 from flask import Flask, request
 import json
 from voice import Voice
@@ -21,12 +23,15 @@ def start():
     }
     session_id = request.json['session']["session_id"]
     if request.json['session']['new']:
+        # Создание экземпляра класса Voice()
         obj_voice = Voice()
         dc_obj_voice[session_id] = obj_voice
         response["response"]["text"] = obj_voice.hello()
+        response["session_state"] = {'def_name': 'get_lsh'}
     else:
         obj_voice = dc_obj_voice[session_id]
-        dc_resp = obj_voice.routerResp(response)
+        dc_resp = obj_voice.routerResp(request)
+        pprint(request.json)
         response["response"]["text"] = dc_resp['text_resp']
         response["session_state"] = {'def_name': dc_resp['def_name']}
     return json.dumps(response)
