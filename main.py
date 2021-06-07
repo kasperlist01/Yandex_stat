@@ -27,13 +27,17 @@ def start():
         obj_voice = Voice()
         dc_obj_voice[session_id] = obj_voice
         response["response"]["text"] = obj_voice.hello()
-        response["session_state"] = {'def_name': 'get_lsh'}
+        response["session_state"] = {'def_name': 'first_msg'}
+        print(request.json)
+        print(response)
     else:
         obj_voice = dc_obj_voice[session_id]
         dc_resp = obj_voice.routerResp(request)
-        pprint(request.json)
         response["response"]["text"] = dc_resp['text_resp']
         response["session_state"] = {'def_name': dc_resp['def_name']}
+        print(request.json)
+        print('---')
+        print(response)
     return json.dumps(response)
 
 

@@ -151,18 +151,6 @@ class YaBus:
             ls_stat = [el[1]['name'].lower() for el in dc_info_stat.items()]
             ost = difflib.get_close_matches(' '.join(ls_word).lower(), ls_stat, n=1, cutoff=0.7)
             dc_ans = {'BUS_STAT': ost[0]} if len(ost) != 0 else {'ERROR': '1'}
-
-        """dc_info_stat = ost_or_str(request)
-        if cn_ost(dc_info_stat)[0] == 'ERROR':
-            response["response"][
-                "text"] = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшего к ней дома.'
-        elif int(cn_ost(dc_info_stat)[1]) == 1:
-            response["response"]["text"] = 'Вы выбрали остановку ' + cn_ost(dc_info_stat)[
-                0]
-        else:
-            response["response"]["text"] = 'Вы выбрали остановку ' + cn_ost(dc_info_stat)[
-                0] + ', но остановок с таким названием найдено ' + cn_ost(dc_info_stat)[1]"""
-
         return dc_ans
 
     def cn_ost(self, dc_info):
@@ -171,21 +159,25 @@ class YaBus:
         :param dc_info: Словарь {'GEO': 'адрес'} | {'BUS_STAT': 'название остановки'} | {'GEO_PREC': 'адрес'} | {'ERROR': '1'}
         :return: (название остановки, кол-во остановок)
         """
-        sched = YaBus()
         ls_stat = []
 
         if dc_info.get('GEO', ''):
-            ls_name_and_id_coord = sched.find_stat(dc_info['GEO']) if 'орел' in dc_info['GEO'] else sched.find_stat(
+            ls_name_and_id_coord = self.find_stat(dc_info['GEO']) if 'орел' in dc_info['GEO'] else self.find_stat(
                 'орел ' + dc_info['GEO'])
             ls_stat = ls_name_and_id_coord[3]
         elif dc_info.get('BUS_STAT', ''):
-            ls_stat = sched.find_oll_min_stat(dc_info['BUS_STAT'])
+            ls_stat = self.find_oll_min_stat(dc_info['BUS_STAT'])
         elif dc_info.get('ERROR', ''):
             ls_stat = [('0', {'name': 'ERROR'})]
         elif dc_info.get('GEO_PREC', ''):
             ls_stat = [('0', {'name': dc_info['GEO_PREC']})]
-        print(ls_stat)
-        return ls_stat[0][1]['name'], str(len(ls_stat))
+        if ls_stat[0][1]['name'] == 'ERROR':
+            ans = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшего к ней дома.'
+        elif int(str(len(ls_stat))) == 1:
+            ans = 'Вы выбрали остановку ' + ls_stat[0][1]['name']
+        else:
+            ans = 'Вы выбрали остановку ' + ls_stat[0][1]['name'] + ', но остановок с таким названием найдено ' + str(len(ls_stat))
+        return ans
 
 
 # Обновляет список заведений
