@@ -31,29 +31,31 @@ class YaBus:
         :param response: HTML файл всех остановок
         :return: Словарь хронящий информацию об остновках
         """
-        ls_name_stations = []
-        ls_id_stations = []
-        ls_coordinates_stations = []
-        ls_address_stations = []
-        ls_info_stations = []
-
-        HtmlTree = html.fromstring(response)
-        ls_stations = HtmlTree.xpath("//div[@data-chunk='search-snippet']")
-        for ost in ls_stations:
-            if len(ost.xpath(".//div[@class='search-business-snippet-view__title']/text()")) != 0:
-                ls_name_stations.append(ost.xpath(".//div[@class='search-business-snippet-view__title']/text()")[0])
-                match = re.search(r'\d+', str(ost.xpath(".//a[@class='search-snippet-view__link-overlay']/@href")))
-                ls_id_stations.append(match[0])
-                ls_address_stations.append(
-                    ost.xpath(".//div[@class='search-business-snippet-view__address']/text()")[0])
-                ls_coordinates_stations.append(ost.xpath(".//div[@class='search-snippet-view__body "
-                                                         "_type_business']/@data-coordinates"))
-        for info in range(len(ls_name_stations)):
-            ls_info_stations.append(
-                [ls_name_stations[info], ls_id_stations[info], ls_address_stations[info],
-                 ls_coordinates_stations[info][0].split(',')[0], ls_coordinates_stations[info][0].split(',')[1]])
-        dc_info_stations = {info[1]: {'name': info[0], 'addr': info[2], 'coord_long': info[3], 'coord_lat': info[4]} for
-                            info in ls_info_stations}
+        # ls_name_stations = []
+        # ls_id_stations = []
+        # ls_coordinates_stations = []
+        # ls_address_stations = []
+        # ls_info_stations = []
+        #
+        # HtmlTree = html.fromstring(response)
+        # ls_stations = HtmlTree.xpath("//div[@data-chunk='search-snippet']")
+        # for ost in ls_stations:
+        #     if len(ost.xpath(".//div[@class='search-business-snippet-view__title']/text()")) != 0:
+        #         ls_name_stations.append(ost.xpath(".//div[@class='search-business-snippet-view__title']/text()")[0])
+        #         match = re.search(r'\d+', str(ost.xpath(".//a[@class='search-snippet-view__link-overlay']/@href")))
+        #         ls_id_stations.append(match[0])
+        #         ls_address_stations.append(
+        #             ost.xpath(".//div[@class='search-business-snippet-view__address']/text()")[0])
+        #         ls_coordinates_stations.append(ost.xpath(".//div[@class='search-snippet-view__body "
+        #                                                  "_type_business']/@data-coordinates"))
+        # for info in range(len(ls_name_stations)):
+        #     ls_info_stations.append(
+        #         [ls_name_stations[info], ls_id_stations[info], ls_address_stations[info],
+        #          ls_coordinates_stations[info][0].split(',')[0], ls_coordinates_stations[info][0].split(',')[1]])
+        # dc_info_stations = {info[1]: {'name': info[0], 'addr': info[2], 'coord_long': info[3], 'coord_lat': info[4]} for
+        #                     info in ls_info_stations}
+        with open('dc_org_stat.pickle', 'rb') as f:
+            dc_info_stations = pickle.load(f)
         return dc_info_stations
 
     def find_stat(self, street):
@@ -160,6 +162,8 @@ class YaBus:
         :return: (название остановки, кол-во остановок)
         """
         ls_stat = []
+        with open('dc_full_org.pickle', 'rb') as f:
+            dc_org = pickle.load(f)
 
         if dc_info.get('GEO', ''):
             ls_name_and_id_coord = self.find_stat(dc_info['GEO']) if 'орел' in dc_info['GEO'] else self.find_stat(
@@ -174,9 +178,17 @@ class YaBus:
         if ls_stat[0][1]['name'] == 'ERROR':
             ans = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшего к ней дома.'
         elif int(str(len(ls_stat))) == 1:
-            ans = 'Вы выбрали остановку ' + ls_stat[0][1]['name']
+            ans = 'Ближайшая остановка по вашему адресу ' + ls_stat[0][1]['name'] + ' рядом с ' + dc_org[self.dc_state[str(ls_stat[0][0])]['org']]['category'] + ' ' + dc_org[self.dc_state[str(ls_stat[0][0])]['org']]['title']
         else:
-            ans = 'Вы выбрали остановку ' + ls_stat[0][1]['name'] + ', но остановок с таким названием найдено ' + str(len(ls_stat))
+            stat_v = 'остановки' if len(ls_stat) >= 5 else 'остановок'
+            ans = f'Я нашла {len(ls_stat)} {stat_v} с названием {ls_stat[0][1]["name"]}'
+            for cn in range(len(ls_stat)):
+                if cn == 0:
+                    ans += f'. Первая остановка находится рядом с {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
+                elif cn == 1:
+                    ans += '. Вторая остановка находится около ' + dc_org[self.dc_state[str(ls_stat[cn][0])]['org']]['category'] + ' ' + dc_org[self.dc_state[str(ls_stat[cn][0])]['org']]['title']
+                elif cn == 2:
+                    ans += '. Третья остановка находится рядом с ' + dc_org[self.dc_state[str(ls_stat[cn][0])]['org']]['category'] + ' ' + dc_org[self.dc_state[str(ls_stat[cn][0])]['org']]['title']
         return ans
 
 
