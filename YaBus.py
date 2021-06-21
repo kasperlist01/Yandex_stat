@@ -4,7 +4,6 @@ import requests
 from lxml import html
 from key import key
 import math
-import re
 
 
 class YaBus:
@@ -162,6 +161,7 @@ class YaBus:
         :return: (название остановки, кол-во остановок)
         """
         ls_stat = []
+        ls_org = []
         with open('dc_full_org.pickle', 'rb') as f:
             dc_org = pickle.load(f)
 
@@ -177,18 +177,40 @@ class YaBus:
             ls_stat = [('0', {'name': dc_info['GEO_PREC']})]
         if ls_stat[0][1]['name'] == 'ERROR':
             ans = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшего к ней дома.'
-        elif int(str(len(ls_stat))) == 1:
+        elif len(ls_stat) == 1:
             ans = 'Ближайшая остановка по вашему адресу ' + ls_stat[0][1]['name'] + ' рядом с ' + dc_org[self.dc_state[str(ls_stat[0][0])]['org']]['category'] + ' ' + dc_org[self.dc_state[str(ls_stat[0][0])]['org']]['title']
         else:
-            stat_v = 'остановки' if len(ls_stat) >= 5 else 'остановок'
+            stat_v = 'остановок' if len(ls_stat) >= 5 else 'остановки'
             ans = f'Я нашла {len(ls_stat)} {stat_v} с названием {ls_stat[0][1]["name"]}'
             for cn in range(len(ls_stat)):
                 if cn == 0:
                     ans += f'. Первая остановка находится рядом с {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
+                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
+                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
                 elif cn == 1:
-                    ans += '. Вторая остановка находится около ' + dc_org[self.dc_state[str(ls_stat[cn][0])]['org']]['category'] + ' ' + dc_org[self.dc_state[str(ls_stat[cn][0])]['org']]['title']
+                    ans += f'. Вторая остановка находится около {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
+                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
+                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
                 elif cn == 2:
-                    ans += '. Третья остановка находится рядом с ' + dc_org[self.dc_state[str(ls_stat[cn][0])]['org']]['category'] + ' ' + dc_org[self.dc_state[str(ls_stat[cn][0])]['org']]['title']
+                    ans += f'. Третья остановка находится рядом с {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
+                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
+                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
+                elif cn == 3:
+                    ans += f'. Четвертая остановка находится около {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
+                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
+                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
+                elif cn == 4:
+                    ans += f'. Пятая остановка находится возле {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
+                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
+                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
+                elif cn == 5:
+                    ans += f'. Шестая остановка находится рядом с {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
+                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
+                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
+        return [ans, ls_org]
+
+    def recong_org(self, ans_pl, ls_org):
+        ans = difflib.get_close_matches(ans_pl, ls_org, n=1)[0]
         return ans
 
 

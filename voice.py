@@ -14,15 +14,21 @@ class Voice:
         return 'Добрый день, я расскажу вам расписание транспорта Орла. Произнесите название остановки или адрес ближайшего к ней дома.'
 
     def routerResp(self, request):
-        msg = request.json['request']['command']
         def_name = request.json.get('state', {}).get('session', {}).get('def_name')
         if def_name == 'first_msg':
-            return self.stat(request)
-        else:
-            return self.stat(request)
+            return self.stat_ls(request)
+        elif def_name == 'stat_ls':
+            return self.recong_org(request)
 
-    def stat(self, request):
-        def_name = 'stat'
+    def stat_ls(self, request):
+        def_name = 'stat_ls'
         dc = self.yabus_obj.ost_or_str(request)
-        txt = self.yabus_obj.cn_ost(dc)
+        txt = self.yabus_obj.cn_ost(dc)[0]
+        self.ls = self.yabus_obj.cn_ost(dc)[1]
+        return {'text_resp': txt, 'def_name': def_name}
+
+    def recong_org(self, request):
+        def_name = 'recong_org'
+        msg = request.json['request']['command']
+        txt = self.yabus_obj.recong_org(msg, self.ls)
         return {'text_resp': txt, 'def_name': def_name}
