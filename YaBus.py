@@ -24,35 +24,13 @@ class YaBus:
             self.response = file.read()
         self.dc_state = self.info_stat(self.response)
 
+
     def info_stat(self, response):
         """Возвращает информацию о всех остановках в городе
 
         :param response: HTML файл всех остановок
         :return: Словарь хронящий информацию об остновках
         """
-        # ls_name_stations = []
-        # ls_id_stations = []
-        # ls_coordinates_stations = []
-        # ls_address_stations = []
-        # ls_info_stations = []
-        #
-        # HtmlTree = html.fromstring(response)
-        # ls_stations = HtmlTree.xpath("//div[@data-chunk='search-snippet']")
-        # for ost in ls_stations:
-        #     if len(ost.xpath(".//div[@class='search-business-snippet-view__title']/text()")) != 0:
-        #         ls_name_stations.append(ost.xpath(".//div[@class='search-business-snippet-view__title']/text()")[0])
-        #         match = re.search(r'\d+', str(ost.xpath(".//a[@class='search-snippet-view__link-overlay']/@href")))
-        #         ls_id_stations.append(match[0])
-        #         ls_address_stations.append(
-        #             ost.xpath(".//div[@class='search-business-snippet-view__address']/text()")[0])
-        #         ls_coordinates_stations.append(ost.xpath(".//div[@class='search-snippet-view__body "
-        #                                                  "_type_business']/@data-coordinates"))
-        # for info in range(len(ls_name_stations)):
-        #     ls_info_stations.append(
-        #         [ls_name_stations[info], ls_id_stations[info], ls_address_stations[info],
-        #          ls_coordinates_stations[info][0].split(',')[0], ls_coordinates_stations[info][0].split(',')[1]])
-        # dc_info_stations = {info[1]: {'name': info[0], 'addr': info[2], 'coord_long': info[3], 'coord_lat': info[4]} for
-        #                     info in ls_info_stations}
         with open('dc_org_stat.pickle', 'rb') as f:
             dc_info_stations = pickle.load(f)
         return dc_info_stations
@@ -158,9 +136,9 @@ class YaBus:
         """Метод считает кол-во остановок.
 
         :param dc_info: Словарь {'GEO': 'адрес'} | {'BUS_STAT': 'название остановки'} | {'GEO_PREC': 'адрес'} | {'ERROR': '1'}
-        :return: (название остановки, кол-во остановок)
+        :return: Реплику пользователю
         """
-        ls_stat = []
+        ls_state = []
         ls_org = []
         with open('dc_full_org.pickle', 'rb') as f:
             dc_org = pickle.load(f)
@@ -168,49 +146,60 @@ class YaBus:
         if dc_info.get('GEO', ''):
             ls_name_and_id_coord = self.find_stat(dc_info['GEO']) if 'орел' in dc_info['GEO'] else self.find_stat(
                 'орел ' + dc_info['GEO'])
-            ls_stat = ls_name_and_id_coord[3]
+            ls_state = ls_name_and_id_coord[3]
         elif dc_info.get('BUS_STAT', ''):
-            ls_stat = self.find_oll_min_stat(dc_info['BUS_STAT'])
+            ls_state = self.find_oll_min_stat(dc_info['BUS_STAT'])
         elif dc_info.get('ERROR', ''):
-            ls_stat = [('0', {'name': 'ERROR'})]
+            ls_state = [('0', {'name': 'ERROR'})]
         elif dc_info.get('GEO_PREC', ''):
-            ls_stat = [('0', {'name': dc_info['GEO_PREC']})]
-        if ls_stat[0][1]['name'] == 'ERROR':
-            ans = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшего к ней дома.'
-        elif len(ls_stat) == 1:
-            ans = 'Ближайшая остановка по вашему адресу ' + ls_stat[0][1]['name'] + ' рядом с ' + dc_org[self.dc_state[str(ls_stat[0][0])]['org']]['category'] + ' ' + dc_org[self.dc_state[str(ls_stat[0][0])]['org']]['title']
-        else:
-            stat_v = 'остановок' if len(ls_stat) >= 5 else 'остановки'
-            ans = f'Я нашла {len(ls_stat)} {stat_v} с названием {ls_stat[0][1]["name"]}'
-            for cn in range(len(ls_stat)):
-                if cn == 0:
-                    ans += f'. Первая остановка находится рядом с {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
-                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
-                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
-                elif cn == 1:
-                    ans += f'. Вторая остановка находится около {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
-                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
-                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
-                elif cn == 2:
-                    ans += f'. Третья остановка находится рядом с {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
-                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
-                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
-                elif cn == 3:
-                    ans += f'. Четвертая остановка находится около {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
-                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
-                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
-                elif cn == 4:
-                    ans += f'. Пятая остановка находится возле {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
-                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
-                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
-                elif cn == 5:
-                    ans += f'. Шестая остановка находится рядом с {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"]}  {dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"]}'
-                    ls_org.append(dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["category"] + ' ' +
-                                  dc_org[self.dc_state[str(ls_stat[cn][0])]["org"]]["title"])
-        return [ans, ls_org]
+            ls_state = [('0', {'name': dc_info['GEO_PREC']})]
 
-    def recong_org(self, ans_pl, ls_org):
-        ans = difflib.get_close_matches(ans_pl, ls_org, n=1)[0]
+        if ls_state[0][1]['name'] == 'ERROR':
+            ans = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшего к ней дома.'
+        elif len(ls_state) == 1:
+            dc = dc_org[self.dc_state[str(ls_state[0][0])]['org']]
+            category = dc['category'] if bool(dc.get('category', None)) else ''
+            title = dc['title'] if bool(dc.get('title', None)) else ''
+            ans = 'Ближайшая остановка по вашему адресу ' + ls_state[0][1]['name'] + ' рядом с ' + category + ' ' + title
+            ls_org.append(category + ' ' + title)
+        else:
+            stat_v = 'остановок' if len(ls_state) >= 5 else 'остановки'
+            ans = f'Я нашла {len(ls_state)} {stat_v} с названием, {ls_state[0][1]["name"]}'
+            for cn in range(len(ls_state)):
+                dc = dc_org[self.dc_state[str(ls_state[cn][0])]["org"]]
+                category = dc['category'] if bool(dc.get('category', None)) else ''
+                title = dc['title'] if bool(dc.get('title', None)) else ''
+                if cn == 0:
+                    ans += f'. Первая остановка находится рядом с {category} {title}'
+                    ls_org.append(category + ' ' + title)
+                elif cn == 1:
+                    ans += f'. Вторая остановка находится около {category} {title}'
+                    ls_org.append(category + ' ' + title)
+                elif cn == 2:
+                    ans += f'. Третья остановка находится рядом с {category} {title}'
+                    ls_org.append(category + ' ' + title)
+                elif cn == 3:
+                    ans += f'. Четвертая остановка находится около {category} {title}'
+                    ls_org.append(category + ' ' + title)
+                elif cn == 4:
+                    ans += f'. Пятая остановка находится возле {category} {title}'
+                    ls_org.append(category + ' ' + title)
+                elif cn == 5:
+                    ans += f'. Шестая остановка находится рядом с {category} {title}'
+                    ls_org.append(category + ' ' + title)
+            ans += '. Возле чего находится нужная вам остановка?'
+        ans = ans.replace('  ', ' ')
+        return [ans, ls_org, ls_state]
+
+    def recong_org(self, ans_pl, ls_org , state):
+        """
+
+        :param ans_pl: Слова пользователя
+        :param ls_org: Список организаций
+        :return: Реплику пользователю
+        """
+        org = difflib.get_close_matches(ans_pl, ls_org, n=1, cutoff=0.3)[0]
+        ans = f'Вы выбрали остановку {state} возле {org}, я правильно поняла?'
         return ans
 
 
