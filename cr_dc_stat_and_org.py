@@ -38,6 +38,7 @@ for dc1 in dc_obj1.items():
     dc1[1]['org'] = fin_id_org
     ls_id_org.append(fin_id_org)
     min_coord = 99
+    print(fin_org, fin_id_org)
 pprint(dc_obj1)
 # cn = 0
 # new_dc = {}

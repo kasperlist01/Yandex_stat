@@ -23,12 +23,11 @@ class Voice:
     def stat_ls(self, request):
         def_name = 'stat_ls'
         dc = self.yabus_obj.ost_or_str(request)
-        txt = self.yabus_obj.cn_ost(dc)[0]
-        self.ls = self.yabus_obj.cn_ost(dc)[1]
+        txt = self.yabus_obj.cn_ost(dc)
         return {'text_resp': txt, 'def_name': def_name}
 
     def recong_org(self, request):
         def_name = 'recong_org'
         msg = request.json['request']['command']
-        txt = self.yabus_obj.recong_org(msg, self.ls)
+        txt = self.yabus_obj.recong_org(msg)
         return {'text_resp': txt, 'def_name': def_name}
