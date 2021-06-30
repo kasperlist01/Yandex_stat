@@ -24,7 +24,7 @@ class YaBus:
     def __init__(self):
         with open('dc_org_stat.pickle', 'rb') as f:
             self.dc_info_state = pickle.load(f)
-        with open('dc_org.pickle', 'rb') as f:
+        with open('dc_full_org.pickle', 'rb') as f:
             self.dc_info_org = pickle.load(f)
         self.ls_state = []
 
