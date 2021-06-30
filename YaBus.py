@@ -1,7 +1,5 @@
 import difflib
 import pickle
-from pprint import pprint
-
 import requests
 from lxml import html
 from key import key
@@ -193,6 +191,7 @@ class YaBus:
         return ans
 
     def recong_org(self, ans_pl):
+        # !!! Если остановка одна, то исправить
         ls_org = []
         ls_id_org = self.find_id_org()
         for el in ls_id_org:
