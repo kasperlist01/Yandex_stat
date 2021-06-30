@@ -162,6 +162,7 @@ class YaBus:
             ans = 'Ближайшая остановка по вашему адресу ' + self.ls_state[0][1][
                 'name'] + ' рядом с ' + category + ' ' + title
             ls_org.append(category + ' ' + title)
+            print(self.ls_state)
         else:
             stat_v = 'остановок' if len(self.ls_state) >= 5 else 'остановки'
             ans = f'Я нашла {len(self.ls_state)} {stat_v} с названием, {self.ls_state[0][1]["name"]}'
@@ -199,8 +200,8 @@ class YaBus:
             category = dc['category'] if bool(dc.get('category', None)) else ''
             title = dc['title'] if bool(dc.get('title', None)) else ''
             ls_org.append(category + ' ' + title)
-        org = difflib.get_close_matches(ans_pl, ls_org, n=1)[0]
-        ans = f'Вы выбрали остановку {ls_id_org} возле {org}, я правильно поняла?'
+        org = difflib.get_close_matches(ans_pl, ls_org, cutoff=0.5, n=1)[0]
+        ans = f'Вы выбрали остановку {self.ls_state[0][1]["name"]} возле {org}, я правильно поняла?'
         return ans
 
 
