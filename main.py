@@ -3,6 +3,8 @@ from pprint import pprint
 
 from flask import Flask, request
 import json
+
+from logger import CreateMainLogger
 from voice import Voice
 
 dir_prog = os.path.dirname(os.path.abspath(__file__))
@@ -22,6 +24,8 @@ def start():
         }
     }
     session_id = request.json['session']["session_id"]
+    mainlogger = CreateMainLogger()
+    mainlogger.info('request -- '+ str(request.json))
     if request.json['session']['new']:
         # Создание экземпляра класса Voice()
         obj_voice = Voice()
@@ -38,6 +42,7 @@ def start():
         print(request.json)
         print('---')
         print(response)
+        mainlogger.info('response -- '+ str(response))
     return json.dumps(response)
 
 
