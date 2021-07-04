@@ -8,7 +8,7 @@ import math
 
 class YaBus:
     """
-    Класс нужен для получения информации об транспорте
+    Класс нужен для получения информации об транспорте.
     -------------------------
     Метод geopoz_stat() нужен для нахожения ближайшей остновки.
     Вызывается с параметром street - адрес пользователя.
@@ -25,12 +25,13 @@ class YaBus:
         with open('dc_full_org.pickle', 'rb') as f:
             self.dc_info_org = pickle.load(f)
         self.ls_state = []
+        self.cn_state = 0
 
     def find_stat(self, street):
-        """Метод находит ближайшую остновку.
+        """Метод находит ближайшие остновки.
 
         :param street: Адрес пользователя.
-        :return: Список состоящий из названия остановки и её id.
+        :return: Список содержащий всю информацию о остановках.
         """
         ls = []
         street = '+'.join(street.split())
@@ -39,7 +40,6 @@ class YaBus:
             f'&geocode={street}').json()
         addres = dc_res['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']['Point']['pos']
         addres = addres.split()
-        fin_id_station = ''
         fin_station = ''
         min_coord = 99
         for dc in self.dc_info_state.items():
@@ -47,18 +47,17 @@ class YaBus:
                     float(addres[1]) - float(dc[1]['coord_lat'])) < min_coord:
                 min_coord = math.fabs(float(addres[0]) - float(dc[1]['coord_long'])) + math.fabs(
                     float(addres[1]) - float(dc[1]['coord_lat']))
-                fin_id_station = dc[0]
                 fin_station = dc[1]['name']
         for dc in self.dc_info_state.items():
             if dc[1]['name'] == fin_station:
                 ls.append(dc)
-        return [fin_station, fin_id_station, addres, ls]
+        return ls
 
     def find_oll_min_stat(self, fin_station):
-        """Метод находит ближайшие остновки.
+        """Метод по названию оставновки возвращает всю информацию о остановках с таким названием.
 
-        :param coord_stat: Название остановки
-        :return: Список остановок
+        :param coord_stat: Название остановки.
+        :return: Список остановок со всеми данными.
         """
         ls = [dc for dc in self.dc_info_state.items() if dc[1]['name'].lower() == fin_station]
         return ls
@@ -67,7 +66,7 @@ class YaBus:
         """Метод находит расстояние до ближайшей остновки.
 
         :param coord_pl: Координаты пользователя.
-        :param coord_stat: Координаты остановки
+        :param coord_stat: Координаты остановки.
         :return: Дистанцию в метрах.
         """
         distance = math.sqrt(
@@ -80,7 +79,7 @@ class YaBus:
     def cr_list_buses(self, fin_id_station):
         """Метод отображает маршрутоки, которые подходят к остановке.
 
-        :param fin_id_station: Название остановки
+        :param fin_id_station: ID остановки.
         :return: Словарь состоящий из номера маршрутки и времени её прибытия.
         """
         response = requests.get(f'https://yandex.ru/maps/10/orel/stops/{fin_id_station}')
@@ -99,8 +98,9 @@ class YaBus:
         return dc_mr
 
     def ost_or_str(self, request):
-        """Метод различает остановку и адрес.
+        """Метод классифицирует реплику пользователя.
 
+        :param request: Словарь приходящий от пользователя.
         :return: Словарь {'GEO': 'адрес'} | {'BUS_STAT': 'название остановки'} | {'GEO_PREC': 'адрес'} | {'ERROR': '1'}
         """
         ls_word = request.json["request"]["nlu"]["tokens"]
@@ -117,48 +117,49 @@ class YaBus:
                             dc_ans = {'GEO': ' '.join(ls_word).lower()}
 
         if len(dc_ans) == 0:
-            ls_stat = [el[1]['name'].lower() for el in self.dc_info_state.items()]
-            ost = difflib.get_close_matches(' '.join(ls_word).lower(), ls_stat, n=1, cutoff=0.7)
+            ls_state = [el[1]['name'].lower() for el in self.dc_info_state.items()]
+            ost = difflib.get_close_matches(' '.join(ls_word).lower(), ls_state, n=1, cutoff=0.7)
             dc_ans = {'BUS_STAT': ost[0]} if len(ost) != 0 else {'ERROR': '1'}
         return dc_ans
 
     def find_id_org(self):
+        """Метод извлекает из списка остановок рядом с пользователем ID огранизаций.
+
+        :return: Список состоящий из ID организаций.
+        """
         ls_org_user = []
         for cn in range(len(self.ls_state)):
             for el in self.ls_state[cn][1].items():
                 if el[0] == 'org':
                     ls_org_user.append(el[1])
+        print(ls_org_user)
         return ls_org_user
 
     def cn_ost(self, dc_info):
-        """Метод считает кол-во остановок.
+        """Метод составляет реплику для Алисы о найденых остановках и организациях.
 
         :param dc_info: Словарь {'GEO': 'адрес'} | {'BUS_STAT': 'название остановки'} | {'GEO_PREC': 'адрес'} | {'ERROR': '1'}
-        :return: Реплику пользователю
+        :return: Реплика Алисы.
         """
         ls_org = []
         with open('dc_full_org.pickle', 'rb') as f:
             dc_org = pickle.load(f)
 
         if dc_info.get('GEO', ''):
-            ls_name_and_id_coord = self.find_stat(dc_info['GEO']) if 'орел' in dc_info['GEO'] else self.find_stat(
+            self.ls_state = self.find_stat(dc_info['GEO']) if 'орел' in dc_info['GEO'] else self.find_stat(
                 'орел ' + dc_info['GEO'])
-            self.ls_state = ls_name_and_id_coord[3]
         elif dc_info.get('BUS_STAT', ''):
             self.ls_state = self.find_oll_min_stat(dc_info['BUS_STAT'])
-        elif dc_info.get('ERROR', ''):
-            self.ls_state = [('0', {'name': 'ERROR'})]
         elif dc_info.get('GEO_PREC', ''):
             self.ls_state = [('0', {'name': dc_info['GEO_PREC']})]
+        self.cn_state = len(self.ls_state)
 
-        if self.ls_state[0][1]['name'] == 'ERROR':
-            ans = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшего к ней дома.'
-        elif len(self.ls_state) == 1:
+        if len(self.ls_state) == 1:
             dc = dc_org[self.dc_info_state[str(self.ls_state[0][0])]['org']]
             category = dc['category'] if bool(dc.get('category', None)) else ''
             title = dc['title'] if bool(dc.get('title', None)) else ''
             ans = 'Ближайшая остановка по вашему адресу ' + self.ls_state[0][1][
-                'name'] + ' рядом с ' + category + ' ' + title
+                'name'] + ' рядом с ' + category + ' ' + title + '. Я правильно поняла?'
             ls_org.append(category + ' ' + title)
             print(self.ls_state)
         else:
@@ -191,7 +192,11 @@ class YaBus:
         return ans
 
     def recong_org(self, ans_pl):
-        # !!! Если остановка одна, то исправить
+        """Метод по названию привязаной организации возвращает название остановки.
+
+        :param ans_pl: Реплика пользователя(название организации)
+        :return: Реплика Алисы.
+        """
         ls_org = []
         ls_id_org = self.find_id_org()
         for el in ls_id_org:
@@ -199,54 +204,13 @@ class YaBus:
             category = dc['category'] if bool(dc.get('category', None)) else ''
             title = dc['title'] if bool(dc.get('title', None)) else ''
             ls_org.append(category + ' ' + title)
-        org = difflib.get_close_matches(ans_pl, ls_org, cutoff=0.5, n=1)[0]
+        org = difflib.get_close_matches(ans_pl, ls_org, cutoff=0.3, n=1)[0]
         ans = f'Вы выбрали остановку {self.ls_state[0][1]["name"]} возле {org}, я правильно поняла?'
         return ans
 
 
-# Обновляет список заведений
-def cr_obsh_file():
-    with open('dc_apteka.pickle', 'rb') as f:
-        dc_obj = pickle.load(f)
-    with open('dc_kafe.pickle', 'rb') as f:
-        dc_obj.update(pickle.load(f))
-    with open('dc_shop.pickle', 'rb') as f:
-        dc_obj.update(pickle.load(f))
-    for dc in dc_obj.items():
-        dc[1]['coordinates'] = dc[1]['coordinates'].split(',')
-
-    with open('dc_org.pickle', 'wb') as f:
-        pickle.dump(dc_obj, f)
-    return dc_obj
-
-
-# Привязывает заведение к отстановке
-"""def cr_new_dc(dc_info_stations, dc_obj):
-    min_station = ''
-    dc_old = dc_info_stations.copy()
-    min_coord = 99
-    for dc2 in dc_old.items():
-        for dc1 in dc_obj.items():
-            if math.fabs(float(dc1[1]['coordinates'][0]) - float(dc2[1]['coord_long'])) + math.fabs(
-                    float(dc1[1]['coordinates'][1]) - float(dc2[1]['coord_lat'])) < min_coord:
-                min_coord = math.fabs(float(dc1[1]['coordinates'][0]) - float(dc2[1]['coord_long'])) + math.fabs(
-                    float(dc1[1]['coordinates'][1]) - float(dc2[1]['coord_lat']))
-                min_station = dc2[1]['name']
-        print(dc1[1]['title'], min_station)
-        # dc2[1]['coord_long'], dc2[1]['coord_lat'] = 100, 100
-        min_coord = 99"""
-
 if __name__ == '__main__':
-    # st = input()
-    ls = []
-    st = 'Орел спасибо'
+    st = 'Лазурная 7'
     sched = YaBus()
-    ls_name_and_id_coord = sched.find_stat(st)
-    ls_stat = sched.find_oll_min_stat("Стадион имени Ленина")
-    print(ls_stat, len(ls_stat))
-    ls_stat = ls_name_and_id_coord[3]
-    print(ls_stat, len(ls_stat))
-    # print(sched.dc_state)
-    # print(ls_name_and_id_coord[0])
-    # print(dc_buses)
-    # cr_new_dc(sched.dc_state, cr_obsh_file())
+    ls_name_and_id_coord = sched.cr_list_buses(1543276336)
+    print(ls_name_and_id_coord)

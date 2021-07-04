@@ -30,7 +30,7 @@ def start():
         # Создание экземпляра класса Voice()
         obj_voice = Voice()
         dc_obj_voice[session_id] = obj_voice
-        response["response"]["text"] = obj_voice.hello()
+        response["response"]["text"] = obj_voice.first_mess()
         response["session_state"] = {'def_name': 'first_msg'}
         print(request.json)
         print(response)
