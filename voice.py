@@ -30,9 +30,11 @@ class Voice:
         elif def_name == 'stat_ls' and self.cn_state != 1:
             return self.recong_org(request)
         elif def_name == 'stat_ls' and self.cn_state == 1:
-            return self.yes_no(request)
+            return self.yes_no_one(request)
         elif def_name == 'recong_org':
-            return self.yes_no(request)
+            return self.yes_no_one(request)
+        elif def_name == 'yes_no_one':
+            return self.voice_bus(request)
 
     def stat_ls(self, request):
         """Метод озвучивает остановки и привязанные к ним организации.
@@ -42,11 +44,17 @@ class Voice:
         """
         def_name = 'stat_ls'
         dc = self.yabus_obj.ost_or_str(request)
-        txt = self.yabus_obj.cn_ost(dc)
         self.cn_state = self.yabus_obj.cn_state
         if dc.get('ERROR'):
             txt = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшиго к ней дома'
             def_name = 'first_msg'
+        elif dc.get('GEO_PREC'):
+            txt = '2 минуты'
+            def_name = 'yes_no'
+        else:
+            dc = self.yabus_obj.ost_or_str(request)
+            txt = self.yabus_obj.cn_ost(dc)
+            self.cn_state = self.yabus_obj.cn_state
         return {'text_resp': txt, 'def_name': def_name}
 
     def recong_org(self, request):
@@ -60,17 +68,31 @@ class Voice:
         txt = self.yabus_obj.recong_org(msg)
         return {'text_resp': txt, 'def_name': def_name}
 
-    def yes_no(self, request):
+    def yes_no_one(self, request):
         """Метод обрабатывает вопросы да/нет.
 
         :param request: Словарь приходящий от пользователя.
         :return: Словарь {'text_resp': реплика Алисы, 'def_name': название функции}
         """
-        def_name = ''
-        txt = ''
+        def_name = 'yes_no_one'
         if request.json['request']['nlu']['tokens'][0] == 'да':
             txt = 'Хотите услышать какой транспорт прибудет на остановку в ближайшее время?'
         else:
             txt = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшиго к ней дома'
+            def_name = 'first_msg'
+        return {'text_resp': txt, 'def_name': def_name}
+
+    def voice_bus(self, request):
+        """Метод озвучивает маршрутки
+
+        :param request: Словарь приходящий от пользователя.
+        :return: Словарь {'text_resp': реплика Алисы, 'def_name': название функции}
+        """
+        if request.json['request']['nlu']['tokens'][0] == 'да':
+            id_fin_state = self.yabus_obj.find_fin_state()
+            txt = self.yabus_obj.cr_list_buses(id_fin_state)
+            def_name = 'voice_bus'
+        else:
+            txt = 'Ну и фиг с вами'
             def_name = 'first_msg'
         return {'text_resp': txt, 'def_name': def_name}

@@ -1,5 +1,8 @@
 import difflib
+import operator
 import pickle
+from pprint import pprint
+
 import requests
 from lxml import html
 from key import key
@@ -26,6 +29,8 @@ class YaBus:
             self.dc_info_org = pickle.load(f)
         self.ls_state = []
         self.cn_state = 0
+        self.id_fin_state = 0
+        self.id_fin_org = 0
 
     def find_stat(self, street):
         """Метод находит ближайшие остновки.
@@ -80,8 +85,10 @@ class YaBus:
         """Метод отображает маршрутоки, которые подходят к остановке.
 
         :param fin_id_station: ID остановки.
-        :return: Словарь состоящий из номера маршрутки и времени её прибытия.
+        :return: Реплика Алисы.
         """
+        ans = ''
+        tm = 0
         response = requests.get(f'https://yandex.ru/maps/10/orel/stops/{fin_id_station}')
         HtmlTree = html.fromstring(response.content)
         ls_blocks = HtmlTree.xpath("//div[@class='masstransit-vehicle-snippet-view__row']")
@@ -93,9 +100,56 @@ class YaBus:
             del ls[-1]
             ls_name_mr.append(' '.join(ls))
             ls_time_mr.append(block.xpath(".//span[@class='masstransit-prognoses-view__title-text']/text()"))
+        print(ls_time_mr)
+        for i in range(len(ls_time_mr)):
+            if len(ls_time_mr[i]) != 0:
+                if ':' not in ls_time_mr[i][0]:
+                    if ls_time_mr[i][0] == 'прибывает':
+                        ls_time_mr[i] = 0
+                    else:
+                        ls_time_mr[i] = int(ls_time_mr[i][0].split()[0])
+                else:
+                    ls_time_mr[i] = []
         dc_mr = dict(zip(ls_name_mr, ls_time_mr))
-        dc_mr = {key: val[0] for key, val in dc_mr.items() if len(val) != 0 and ':' not in val[0]}
-        return dc_mr
+        dc_mr = {key: val for key, val in dc_mr.items() if type(val) is int}
+        sorted_tuples = sorted(dc_mr.items(), key=operator.itemgetter(1))
+        dc_mr = dict(sorted_tuples)
+        print(dc_mr)
+        # Создание реплики для Алисы
+        for el in dc_mr.items():
+            mn = ''
+            bus, num = el[0].split()[0], el[0].split()[-1]
+            # Правильное чтение транспорта
+            if (int(num[-1]) == 2 or int(num[-1]) == 6 or int(num[-1]) == 7 or int(num[-1]) == 8) and (bus == 'Троллейбус' or bus == 'Автобус'):
+                num += '-ой'
+            elif bus == 'Троллейбус' or bus == 'Автобус':
+                num += '-ый'
+            if bus == 'Маршрутка' and int(num[-1]) == 3:
+                num += '-тья'
+            elif bus == 'Маршрутка':
+                num += '-ая'
+
+            # Правильное чтение времени
+            if el[1] != 0:
+                tm = str(el[1]).split()[0]
+                if int(tm) == 1:
+                    mn = 'минуту'
+                elif int(tm) == 12:
+                    mn = 'минут'
+                elif int(tm[-1]) == 2 or int(tm[-1]) == 3 or int(tm[-1]) == 4:
+                    mn = 'минуты'
+                else:
+                    mn = 'минут'
+
+            # Итоговое сообщение
+            if el[1] == 0:
+                ans += f'{num} {bus} подходит к остановке'
+            elif 1 <= int(tm) <= 5:
+                ans += f'{num} {bus} прибудет через {tm} {mn}'
+            else:
+                ans += f'{num} {bus} приедет через {tm} {mn}'
+            ans += '\n'
+        return ans
 
     def ost_or_str(self, request):
         """Метод классифицирует реплику пользователя.
@@ -155,7 +209,8 @@ class YaBus:
         self.cn_state = len(self.ls_state)
 
         if len(self.ls_state) == 1:
-            dc = dc_org[self.dc_info_state[str(self.ls_state[0][0])]['org']]
+            self.id_fin_org = self.dc_info_state[str(self.ls_state[0][0])]['org']
+            dc = dc_org[self.id_fin_org]
             category = dc['category'] if bool(dc.get('category', None)) else ''
             title = dc['title'] if bool(dc.get('title', None)) else ''
             ans = 'Ближайшая остановка по вашему адресу ' + self.ls_state[0][1][
@@ -164,7 +219,8 @@ class YaBus:
             print(self.ls_state)
         else:
             stat_v = 'остановок' if len(self.ls_state) >= 5 else 'остановки'
-            ans = f'Я нашла {len(self.ls_state)} {stat_v} с названием, {self.ls_state[0][1]["name"]}'
+            n = 'две' if len(self.ls_state) == 2 else len(self.ls_state)
+            ans = f'Я нашла {n} {stat_v} с названием, {self.ls_state[0][1]["name"]}'
             for cn in range(len(self.ls_state)):
                 dc = dc_org[self.dc_info_state[str(self.ls_state[cn][0])]["org"]]
                 category = dc['category'] if bool(dc.get('category', None)) else ''
@@ -204,9 +260,26 @@ class YaBus:
             category = dc['category'] if bool(dc.get('category', None)) else ''
             title = dc['title'] if bool(dc.get('title', None)) else ''
             ls_org.append(category + ' ' + title)
-        org = difflib.get_close_matches(ans_pl, ls_org, cutoff=0.3, n=1)[0]
+        org = difflib.get_close_matches(ans_pl, ls_org, cutoff=0.0, n=1)[0]
+        for el in ls_id_org:
+            dc = self.dc_info_org[str(el)]
+            category = dc['category'] if bool(dc.get('category', None)) else ''
+            title = dc['title'] if bool(dc.get('title', None)) else ''
+            if category + ' ' + title == org:
+                self.id_fin_org = el
         ans = f'Вы выбрали остановку {self.ls_state[0][1]["name"]} возле {org}, я правильно поняла?'
         return ans
+
+    def find_fin_state(self):
+        """Метод находит ID выбраной пользователем остановки.
+
+        :return: ID выбраной остановки
+        """
+        id_fin_state = 0
+        for el in self.ls_state:
+            if el[1]["org"] == self.id_fin_org:
+                id_fin_state = el[0]
+        return id_fin_state
 
 
 if __name__ == '__main__':
