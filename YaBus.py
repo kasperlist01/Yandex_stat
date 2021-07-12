@@ -134,7 +134,7 @@ class YaBus:
                 tm = str(el[1]).split()[0]
                 if int(tm) == 1:
                     mn = 'минуту'
-                elif int(tm) == 12:
+                elif int(tm) == 12 or int(tm) == 13 or int(tm) == 14:
                     mn = 'минут'
                 elif int(tm[-1]) == 2 or int(tm[-1]) == 3 or int(tm[-1]) == 4:
                     mn = 'минуты'
@@ -149,6 +149,7 @@ class YaBus:
             else:
                 ans += f'{num} {bus} приедет через {tm} {mn}'
             ans += '\n'
+        ans += 'Хотите услышать обновленное расписание?'
         return ans
 
     def ost_or_str(self, request):

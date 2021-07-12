@@ -38,6 +38,7 @@ def start():
         obj_voice = dc_obj_voice[session_id]
         dc_resp = obj_voice.routerResp(request)
         response["response"]["text"] = dc_resp['text_resp']
+        response["response"]["end_session"] = dc_resp['end_session']
         response["session_state"] = {'def_name': dc_resp['def_name']}
         print(request.json)
         print('---')
