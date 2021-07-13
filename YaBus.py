@@ -100,7 +100,6 @@ class YaBus:
             del ls[-1]
             ls_name_mr.append(' '.join(ls))
             ls_time_mr.append(block.xpath(".//span[@class='masstransit-prognoses-view__title-text']/text()"))
-        print(ls_time_mr)
         for i in range(len(ls_time_mr)):
             if len(ls_time_mr[i]) != 0:
                 if ':' not in ls_time_mr[i][0]:
@@ -114,7 +113,7 @@ class YaBus:
         dc_mr = {key: val for key, val in dc_mr.items() if type(val) is int}
         sorted_tuples = sorted(dc_mr.items(), key=operator.itemgetter(1))
         dc_mr = dict(sorted_tuples)
-        print(dc_mr)
+
         # Создание реплики для Алисы
         for el in dc_mr.items():
             mn = ''
@@ -152,13 +151,17 @@ class YaBus:
         ans += 'Хотите услышать обновленное расписание?'
         return ans
 
-    def ost_or_str(self, request):
+    def ost_or_str(self, request, word=None):
         """Метод классифицирует реплику пользователя.
 
+        :param word:
         :param request: Словарь приходящий от пользователя.
         :return: Словарь {'GEO': 'адрес'} | {'BUS_STAT': 'название остановки'} | {'GEO_PREC': 'адрес'} | {'ERROR': '1'}
         """
-        ls_word = request.json["request"]["nlu"]["tokens"]
+        if word:
+            ls_word = [word[0]]
+        else:
+            ls_word = request.json["request"]["nlu"]["tokens"]
         dc_ans = {}
 
         if ('рядом' in ls_word) or ('возле' in ls_word) or ('около' in ls_word):

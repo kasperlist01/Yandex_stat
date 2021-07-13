@@ -51,8 +51,19 @@ class Voice:
             txt = 'Упс, извините, произнесите ещё раз, название остановки или адрес ближайшиго к ней дома'
             def_name = 'first_msg'
         elif dc.get('GEO_PREC'):
-            txt = '2 минуты'
-            def_name = 'yes_no'
+            word = dc['GEO_PREC']
+            if 'рядом' in word:
+                word = word.split('рядом')
+            elif 'возле' in word:
+                word = word.split('возле')
+            else:
+                word = word.split('около')
+            dc = self.yabus_obj.ost_or_str(request, word=word)
+            t = self.yabus_obj.cn_ost(dc)
+            t = self.yabus_obj.recong_org(word[1])
+            id_fin_state = self.yabus_obj.find_fin_state()
+            txt = self.yabus_obj.cr_list_buses(id_fin_state)
+            def_name = 'voice_bus'
         else:
             dc = self.yabus_obj.ost_or_str(request)
             txt = self.yabus_obj.cn_ost(dc)
